@@ -1,0 +1,2 @@
+# AutoWordle
+Automatical Plays Wordle
