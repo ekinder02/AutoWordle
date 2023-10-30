@@ -5,6 +5,7 @@ import win32api
 from python_imagesearch.imagesearch import imagesearch,imagesearcharea
 from PIL import Image
 import time
+import pyautogui
 
 
 def searchImage(imagePath):
@@ -45,88 +46,29 @@ def click(x,y):
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,x,y,0,0)
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,x,y,0,0)
 
-def searchForColor(guess):
+def searchForColor(guess,boxes):
     guess -= 1
-    listGreen = []
-    listYellow = []
-    listRed = []
-    allColors = []
-    allColorsText = []
-    allColorsSorted = []
-    allColorsSortedText = []
-    go = True
     saveScreenShot(0,0,1920,1080,"screen.bmp")
     im = Image.open(r"screen.bmp")
-    for j in range(100,640):
-        for i in range(1920):
-            if im.getpixel((i,j)) == (106,170,100):
-                if listGreen == []:
-                    listGreen.append((i,j))
-                    allColorsText.append("Green")
-                    allColors.append((i,j))
-                for k in listGreen:
-                    if abs(i - k[0]) < 64 and abs(j - k[1]) < 64:
-                        go = False
-                if go == True:
-                    listGreen.append((i,j))
-                    allColorsText.append("Green")
-                    allColors.append((i,j))
-                go = True
-            elif im.getpixel((i,j)) == (201,180,88):
-                if listYellow == []:
-                    listYellow.append((i,j))
-                    allColorsText.append("Yellow")
-                    allColors.append((i,j))
-                for k in listYellow:
-                    if abs(i - k[0]) < 64 and abs(j - k[1]) < 64:
-                        go = False
-                if go == True:
-                    listYellow.append((i,j))
-                    allColorsText.append("Yellow")
-                    allColors.append((i,j))
-                go = True
-            elif im.getpixel((i,j)) == (120,124,126):
-                if listRed == []:
-                    listRed.append((i,j))
-                    allColorsText.append("Red")
-                    allColors.append((i,j))
-                for k in listRed:
-                    if abs(i - k[0]) < 64 and abs(j - k[1]) < 64:
-                        go = False
-                if go == True:
-                    listRed.append((i,j))
-                    allColorsText.append("Red")
-                    allColors.append((i,j))
-                    go = False
-                go = True
+    colors = []
     for i in range(0+(guess*5),5+(guess*5)):
-        allColorsSortedText.append(allColorsText[i])
-    
-    return(allColorsSortedText)
-    
-def findAreas():
-    letter_list = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N",
-                        "O","P","Q","R","S","T","U","V","W","X","Y","Z"]
-    positions = []
-    for letter in letter_list:
-        pos = searchImage("WordleUnlimited/" + letter + ".png")
-        positions.append(pos)
-    return(positions)
+        if im.getpixel((boxes[i][0]+10,boxes[i][1]+10)) == (106,170,100):
+            colors.append("Green")
+        elif im.getpixel((boxes[i][0]+10,boxes[i][1]+10)) == (201,180,88):
+            colors.append("Yellow")
+        elif im.getpixel((boxes[i][0]+10,boxes[i][1]+10)) == (120,124,126):
+            colors.append("Red")  
+    return(colors)
 
-def clickWord(word,guess,positions):
-    letter_list = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N",
-                        "O","P","Q","R","S","T","U","V","W","X","Y","Z"]
-    word = word.upper()
+def clickWord(word,guess):
     for i in word:
-        pos = positions[letter_list.index(i)]
-        click(pos[0]-1900,pos[1]+20)
+        pyautogui.press(i)
     guess += 1
     clickEnter()
     return(guess)
 
 def clickEnter():
-    pos = searchImage("WordleUnlimited/Enter.png")
-    click(pos[0]-1900,pos[1]+20)
+    pyautogui.press('enter')
 
 def clickPlayAgain():
     time.sleep(2)
@@ -233,8 +175,14 @@ def setLetterGreen(letter,position,letters):
     return(letters) 
     
 def main():
+    boxes = list(pyautogui.locateAllOnScreen('wordbox.png'))
+    for box in boxes:
+        values = []
+        for i in box:
+            if len(values) < 2:
+                values.append(i)
+        boxes[boxes.index(box)] = values
     letters,wordTree,guess = setUp()
-    positions = findAreas()
     wordsGuessed = []
     a = 1
     b = 0
@@ -244,13 +192,24 @@ def main():
         bestWord = getBestWord(wordTree,wordsGuessed)
         wordsGuessed.append(bestWord)
         print(wordsGuessed)
-        guess = clickWord(bestWord,guess,positions)
+        time.sleep(1)
+        guess = clickWord(bestWord,guess)
         time.sleep(2)
-        colors = searchForColor(guess)
+        colors = searchForColor(guess,boxes)
         print(colors)
+        print(boxes)
+        print(guess)
         if colors == ["Green","Green","Green","Green","Green"]:
+            time.sleep(1)
             clickPlayAgain()
-            time.sleep(2)
+            time.sleep(1)
+            boxes = list(pyautogui.locateAllOnScreen('wordbox.png'))
+            for box in boxes:
+                values = []
+                for i in box:
+                    if len(values) < 2:
+                        values.append(i)
+                boxes[boxes.index(box)] = values
             letters,wordTree,guess = setUp()
             wordsGuessed = []
             a = 1
@@ -269,4 +228,6 @@ def main():
             b += 1
 
 main()
+
+
     
